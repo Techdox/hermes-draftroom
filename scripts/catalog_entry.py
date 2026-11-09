@@ -26,7 +26,7 @@ def entry_data(repo, sha, maintainer):
     version = json.loads((ROOT / 'dashboard/manifest.json').read_text())['version']
     return {
         'name': 'draftroom', 'title': 'Draftroom', 'repo': repo, 'sha': sha,
-        'description': 'A Markdown draft beside Hermes chat, with selected-text rewrites and explicit Accept/Reject review. Disclosure: stores drafts, suggestions and retained revisions only in this profile\'s plugin-data; draft content goes through the existing conversation/model; polls its own backend while open; no direct third-party requests, credentials, telemetry, shell commands, background service or self-update.',
+        'description': 'A Markdown draft beside Hermes chat, with selected-text rewrites and explicit Accept/Reject review. Disclosure: stores drafts, suggestions and retained revisions in this profile\'s plugin-data; draft content goes through the existing conversation/model; polls its own backend while open; optional user-initiated repository commit requests use the existing agent tools and approvals. The plugin itself runs no Git or shell commands and adds no direct third-party requests, credentials, telemetry, background service or self-update.',
         'maintainer': maintainer, 'tier': 'community', 'category': 'desktop',
         'requires_hermes': '>=0.23.0', 'version': version, 'docs_url': repo + '#readme',
         'platforms': ['linux', 'macos'],

@@ -1,43 +1,42 @@
 # Add Draftroom to the plugin catalog
 
-Draftroom is a Markdown writing companion beside the existing Hermes chat. `/blog` opens a real draft; selected-text rewrites arrive as proposals for Original / Suggested / Diff review. Human Accept applies and saves the change; Reject leaves the Markdown unchanged.
+Draftroom is a Markdown writing companion beside the existing Hermes conversation. `/blog` opens a real draft; selected-text rewrites arrive as proposals for Original / Suggested / Diff review. Human Accept applies and saves a change; Reject leaves the Markdown unchanged.
 
-## Source and proposed entry
+This is a working early release for the plugin hackathon, not a finished editor. The core co-writing workflow works. Further development is focused on making it clearer and more comfortable to use.
 
-- Repository: `<PUBLIC_REPO_URL>`
-- Pinned commit: `<FULL_40_CHAR_COMMIT_SHA>`
-- Release target: **0.1.2**; the pinned manifest and package must match.
-- Proposed catalog file: `plugin-catalog/draftroom.yaml`
-- Native demo: `<DEMO_X_POST_URL>`
-- UI screenshot: `<PUBLIC_PRIVACY_REVIEWED_SCREENSHOT_URL>`
+## Source
 
-These are pending placeholders, not existing publication links. This local body does not establish a PR or a CI result. Fill the pin and links, and resolve the unchecked release gates before submission.
+- Repository: <PUBLIC_REPO_URL>
+- Exact source pin: <FULL_40_CHAR_COMMIT_SHA>
+- Version: **0.1.2**
+- Catalog change: `plugin-catalog/draftroom.yaml`
 
 ## Implementation and scope
 
 - Public Python tool/skill and plugin REST surfaces, plus the public Desktop SDK workspace, composer middleware, `ctx.rest` and native controls.
-- The current Hermes conversation handles rewrites through `blog_draft`; no second model client or custom provider credentials.
-- Version-bound selections, atomic version-checked saves and retained prior Markdown revisions. The agent tool can create/read/propose, not accept or force-save.
-- Drafting, selected revision and human review only. No publishing, SEO integration, self-updater or core patching.
+- Reuses the current Hermes conversation and configured model. No separate model client, service or provider credentials.
+- Version-bound selections, optimistic saves, atomic writes and retained prior Markdown revisions. The agent proposes; the editor user alone accepts.
+- Includes History preview/restore, Markdown export and an optional explicit handoff to the agent for committing to a user-designated repository.
+- Requires both Agent and Desktop components, a compatible public Desktop SDK, and a Linux/macOS backend (`fcntl` locking). No Hermes core patches or self-updater.
 
-## Installation and activation notes
+## Validation
 
-1. Install the pinned backend package into the **intended Hermes profile** and enable `draftroom` with the normal plugin manager. Read any reload/restart requirement; enabled does not necessarily mean loaded.
-2. On the Mac, use **Settings → Plugins → Open plugins folder**. Put the package's `desktop/plugin.js` at `draftroom/plugin.js` inside that actual local folder. Reload desktop plugins if needed, then enable Draftroom. A remote backend path is not the Mac's plugin folder.
-3. Confirm the backend actually serving Desktop has loaded `blog_draft` and `draftroom:blog`, then open a fresh conversation. A separate gateway and Desktop `serve` process caused an activation mismatch in native testing; enabling the gateway alone did not resolve it. Shared restarts require permission.
-
-Requires a recent compatible public Desktop SDK and a POSIX backend (`fcntl` locking). Confirm the supported version floor against the final release rather than guessing compatibility metadata. No one-command/seamless installation claim is made.
+- **177 Python tests**, **32 Node controller tests** and **20 browser checks** passed. Browser checks use the real module/backend through a labelled SDK adapter with controlled proposal fixtures, not a native model demo.
+- The exact runtime ZIP passed source-byte/CRC checks, isolated import and registration, Plugin Doctor and plain validation with no warnings.
+- Native writing was tested in Desktop with the real configured agent. A selected rewrite remained unapplied until human Accept; a subsequent tool read confirmed the accepted replacement persisted exactly. This is not a claim that every UX case or platform has been tested.
+- Full dependency-install admission: <VALIDATION_RESULT>
 
 ## Data and behaviour disclosures
 
-Drafts, metadata, proposals and retained revisions live in the active backend profile's plugin-data directory. Desktop keeps unsaved buffers/recovery snapshots in memory, not localStorage; those buffers are lost on app/plugin reload. The UI autosaves and polls through the existing Hermes backend. Rewrites use the configured agent/provider and may leave the host under that provider's normal settings. Optional Commit to repo sends a frozen, user-initiated request to that same agent; any file/Git/network activity belongs to its existing tools and approvals, not plugin-executed Git. No new credential store, telemetry, standalone service or publishing endpoint is added. Prior revisions are not automatically pruned.
+Drafts, metadata, proposals and retained revisions live in the active backend profile's plugin-data directory. Unsaved buffers/recovery snapshots are memory-only and are lost on plugin/window reload or app quit. Prior revisions are not automatically pruned.
 
-## Validation and evidence boundary
+The UI autosaves and polls its own Hermes backend while open. Rewrites use the existing agent/provider and may leave the host under that provider's normal settings. Optional **Commit to repo** sends a frozen, user-initiated request to the same agent; any file/Git/network activity uses its existing tools and approvals. The plugin does not execute Git itself. No new credential store, telemetry, direct third-party requests, background service or publishing endpoint is added.
 
-- [x] Final 0.1.2 source: 177 Python tests, 32 Node controller tests and 20 browser checks passed, including the Diff regressions and all seven review fixes. Source Doctor, plain validator and syntax checks passed with no warnings from validation. Exact delivered-package CRC/bytes, isolated import/registration and validation remain separately evidenced release gates.
-- [x] Separate actual native Mac 0.1.0 acceptance: selected rewrite through the existing agent and `blog_draft`, human Accept, exact backend Markdown verified, only the selected range changed, prior revision preserved.
-- [ ] At the exact proposed pin, run `hermes plugins validate <PINNED_CHECKOUT> --install-deps` in an isolated validation environment; review failures and warnings.
-- [ ] Install matching 0.1.2 halves and repeat native selection → pending review → human Accept → reopen persistence, including Original / Suggested / Diff. Attach a privacy-reviewed native screenshot and real demo.
-- [ ] Public repository, full 40-character SHA, release version and catalog compatibility/capability metadata confirmed against the pinned tree.
+## UI/UX roadmap
 
-The 20 candidate browser checks used a public-SDK host adapter and controlled rewrite fixtures. They prove editor/backend workflows, not a native renderer or live LLM turn. The earlier native acceptance supplies that separate 0.1.0 evidence; it does not establish native acceptance of 0.1.2. The earlier owned dependency-install admission attempt did not complete because its independent PM runtime was not provisioned; plain validation used preprovisioned compatible dependencies. Catalog CI and maintainer review remain unclaimed. See `VERIFICATION.md` for the full boundary.
+- Refine pane layout, spacing and typography, particularly at narrower sizes.
+- Make selections, pending suggestions and review actions easier to follow.
+- Improve save, connection and error-state feedback, plus first-run setup guidance.
+- Continue keyboard-navigation and accessibility testing in the real Desktop client.
+
+These are planned refinements, not completed features or promised delivery dates. Draftroom remains a focused writing companion rather than a publishing platform.
