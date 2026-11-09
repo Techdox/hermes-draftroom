@@ -1,0 +1,11 @@
+name: draftroom
+version: 0.1.1
+requires_hermes: ">=0.23.0"
+description: A Markdown writing companion beside Hermes chat, with selected-text suggestions and human-reviewed edits.
+author: Nick / Techdox
+provides_tools:
+  - blog_draft
+provides_hooks: []
+capabilities: []
+python_dependencies:
+  - fastapi>=0.115,<1

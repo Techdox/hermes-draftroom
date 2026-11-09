@@ -1,0 +1,25 @@
+# Draftroom Desktop
+
+`plugin.js` is the complete runtime-loaded Desktop half: one plain ESM file, no build step, relative imports, core changes, provider client, or separate service. It imports only React and `@hermes/plugin-sdk`. Install it through the project's normal plugin packaging; the Python Draftroom plugin must also be enabled for the active profile.
+
+## Writing workflow
+
+- **Open Draftroom** in the command palette opens a closeable workspace on the right, leaving chat visible. `/blog [topic]` opens/reopens a session draft and rewrites the outgoing command into a normal request to the existing agent, asking it to load `draftroom:blog` and use `blog_draft(action="propose")`.
+- The draft library lists the current profile's saved drafts. Create opens an identically titled draft in the same conversation if one already exists; concurrent creation is guarded. Opening an older draft does not move or replace the active chat.
+- Edit Markdown normally. **Save**, **Ctrl/Cmd+S** anywhere in the pane, and a **900 ms debounce** use optimistic, version-checked saves. Failed autosaves pause until an explicit retry. A 256 KiB UTF-8 limit is enforced without truncating local text.
+- Select Markdown, enter an instruction, and choose **Rewrite**. The editor saves first, rechecks the saved snapshot and pending review, then addresses the exact stored/runtime session captured at that click. Code-point offsets and the exact original are included. It never submits to an implicit active/new conversation.
+- A suggestion appears as **Original / Suggested** or a unified **Diff**. Only explicit **Accept** changes and saves the draft; **Reject** keeps Markdown unchanged. Dirty/stale acceptance is disabled and checked again against the backend before POST. A pending suggestion must be reviewed/rejected before another rewrite.
+
+## Safety and SDK boundaries
+
+- All REST calls go through `ctx.rest` and the contract in `../API.md`. Every mutation is read back from its exact target before reporting confirmed persistence. React Query polls status/list/current draft every two seconds; supported plugin events only accelerate refresh.
+- Keys include connection, profile, opaque backend scope, and draft ID. Every async result and follow-up action is owner/generation-fenced. Because `ctx.rest` targets only the ambient agent, Draftroom fails closed if the focused conversation's owner does not match that ambient connection/profile. Activate the owning agent before continuing.
+- Query work/caches are cancelled/removed on ownership changes. The current SDK does **not** expose an AbortSignal for `ctx.rest`: an already dispatched native request cannot be physically aborted. Its response is fenced and cannot start a follow-up action under another owner.
+- Polling never replaces dirty Markdown. Conflicts expose the saved version; **Use saved version…** requires confirmation and retains the preceding local text in an owner-scoped recovery section.
+- Unsaved text, selection, instructions, and request state live only in plugin memory, partitioned by connection/profile/backend scope. Closing/reopening the pane and switching owners preserve them without displaying them under another owner. **Reloading/disabling the plugin, reloading the window, or quitting Desktop loses unsaved memory**; successful saves remain in the real backend. There is no localStorage article copy.
+- `composer.submit(...) === true` means an exact visible composer claimed the request, **not** confirmed network delivery or agent completion. Requests are never automatically retried. A claimed/unknown request requires confirmation before retrying, reuses the exact prompt/request ID, and checks the original conversation/snapshot again. Clear request does not cancel an agent turn; any late suggestion still needs review. The agent/backend do not offer end-to-end message idempotency, so an explicit retry can create a duplicate chat message.
+- Native SDK Button/Input/Textarea controls and root-scoped CSS theme variables provide the UI. Missing required SDK doors produce an actionable update message. No private imports, app DOM queries, active route replacement, filesystem writes, direct model calls, publishing, or SEO functionality.
+
+## Verification
+
+Run `node --check desktop/plugin.js` from the project root. Native SDK signatures were checked against the Desktop source and SDK guide. Controller regressions can be exercised with an injected public-SDK/REST test double; the parent project owns real-backend/browser and isolated Desktop acceptance. Syntax/controller checks alone do not establish native renderer acceptance.

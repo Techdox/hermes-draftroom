@@ -1,0 +1,19 @@
+# TEMPLATE ONLY — not an installable pin and not a published catalog entry.
+# Publish the reviewed source and make a clean commit, then generate the real
+# file with scripts/catalog_entry.py using the exact public repo and HEAD SHA.
+name: draftroom
+title: Draftroom
+repo: PUBLIC_GITHUB_REPOSITORY_HOMEPAGE_REQUIRED
+sha: ACTUAL_FULL_COMMIT_SHA_REQUIRED
+maintainer: SUBMITTING_GITHUB_HANDLE_REQUIRED
+tier: community
+category: desktop
+requires_hermes: ">=0.23.0"
+version: "0.1.1"
+description: "A Markdown draft beside Hermes chat, with selected-text rewrites and explicit Accept/Reject review. See the generated entry for complete behaviour disclosure."
+platforms: [linux, macos]
+capabilities:
+  provides_tools: [blog_draft]
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []

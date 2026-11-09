@@ -1,0 +1,7 @@
+{
+  "name": "draftroom",
+  "label": "Draftroom",
+  "version": "0.1.1",
+  "icon": "FilePenLine",
+  "api": "plugin_api.py"
+}

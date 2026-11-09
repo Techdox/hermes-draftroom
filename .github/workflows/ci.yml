@@ -1,0 +1,47 @@
+name: Source checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python: '3.11'
+          - os: ubuntu-latest
+            python: '3.14'
+          - os: macos-latest
+            python: '3.12'
+    runs-on: ${{ matrix.os }}
+    steps:
+      # Pinned to the same official action revisions used by Hermes' workflows.
+      - uses: actions/checkout@f548e57e544e1ff5a4c46bf1e1b8685f8e4a348a # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
+        with:
+          enable-cache: false
+      - name: Install isolated test dependencies with a release-age quarantine
+        run: |
+          uv venv .venv --python '${{ matrix.python }}'
+          uv pip install --python .venv/bin/python --exclude-newer '3 days' -r requirements-dev.txt
+      - name: Tests
+        env:
+          PYTEST_DISABLE_PLUGIN_AUTOLOAD: '1'
+        run: .venv/bin/python -m pytest -q
+      - name: Plain ESM syntax
+        run: node --check desktop/plugin.js
+      - name: Build and verify runtime package
+        run: .venv/bin/python scripts/build_release.py
