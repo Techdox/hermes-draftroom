@@ -1,7 +1,7 @@
 ---
 name: blog
 description: "Use when co-writing in Draftroom. Propose reviewed edits."
-version: 0.1.1
+version: 0.1.2
 ---
 
 # Draftroom writing companion

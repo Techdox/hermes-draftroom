@@ -1,10 +1,10 @@
 # Draftroom: 78-second native demo
 
-**Target:** actual Hermes Desktop on Mac, running the final 0.1.1 backend and Desktop halves. Recording is still pending. One continuous, real-time take, with a real rewrite from the configured Hermes agent. No browser harness, fixture suggestion, sped-up wait or substituted model output.
+**Target:** actual Hermes Desktop on Mac, running the final 0.1.2 backend and Desktop halves. Recording is still pending. One continuous, real-time take, with a real rewrite from the configured Hermes agent. No browser harness, fixture suggestion, sped-up wait or substituted model output.
 
 ## One rehearsal, then record
 
-1. Finish the 0.1.1 native recheck first, including the no-final-newline Diff case. Confirm the process serving Desktop has loaded `blog_draft` and `draftroom:blog`; enabling a separate gateway is not enough. Keep installation and private file verification off camera.
+1. Finish the 0.1.2 native recheck first, including the no-final-newline Diff case. Confirm the process serving Desktop has loaded `blog_draft` and `draftroom:blog`; enabling a separate gateway is not enough. Keep installation and private file verification off camera.
 2. In a new, neutral native conversation, use `/blog A calmer first draft`. Seed and save the Markdown below through the editor. Rehearse the exact shotlist once: real rewrite, review, human Accept, close/reopen. Privately verify the backend file changed only in the selection and retained its prior revision before using that narration.
 3. Restore the sample through the editor, save, and clear any pending proposal. Leave the neutral `/blog` exchange visible with chat and draft side by side. Use **Shift-Cmd-5 → Record Selected Portion**, framing only those panes, with microphone narration. Run the take below and review the exported clip before requesting publication approval.
 
@@ -37,7 +37,7 @@ Select only the middle paragraph, **without its terminating newline**. Instructi
 
 ## Privacy and final take checks
 
-- [ ] Final 0.1.1 build is native-rechecked; the take is not the earlier 0.1.0 acceptance run.
+- [ ] Final 0.1.2 build is native-rechecked; the take is not the earlier 0.1.0 acceptance run.
 - [ ] Frame out connection/profile identifiers, hostnames, IPs, local paths, draft/session IDs, account details, terminals and unrelated sidebars. No private chats, clipboard popovers or notification banners; enable Do Not Disturb.
 - [ ] Only neutral sample content and the real rewrite are visible. No credentials, this preparation chat or private artifact files appear in any frame.
 - [ ] Recorded pending proposal leaves the file unchanged; recorded human Accept saves it; recorded reopen shows persistence. Do not narrate a check that failed.

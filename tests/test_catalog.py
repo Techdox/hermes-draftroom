@@ -9,7 +9,7 @@ def test_entry_matches_actual_registered_capabilities():
     data = entry_data('https://github.com/example/draftroom', 'a' * 40, 'example')
     assert data['name'] == 'draftroom' and data['title'] == 'Draftroom'
     assert data['repo'] == 'https://github.com/example/draftroom'
-    assert data['sha'] == 'a' * 40 and data['version'] == '0.1.1'
+    assert data['sha'] == 'a' * 40 and data['version'] == '0.1.2'
     assert data['requires_hermes'] == '>=0.23.0'
     assert data['tier'] == 'community' and data['category'] == 'desktop'
     assert data['platforms'] == ['linux', 'macos']

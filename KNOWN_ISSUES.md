@@ -8,7 +8,7 @@ Use the signed-in Desktop's Agent / Agent + Desktop control for the selected pro
 
 ## Unsaved buffers
 
-Owner-scoped in-memory buffers survive pane close/reopen and profile/connection switches. They do not survive disabling/reloading the plugin, reloading the window or quitting Desktop. Save before updating either half. The UI explicitly retains text and pauses automatic retries after a failed save.
+Owner-scoped in-memory buffers and distinct recovery snapshots survive pane close/reopen and profile/connection switches. Repeated History restores/reloads do not evict earlier unsaved recovery text. They do not survive disabling/reloading the plugin, reloading the window or quitting Desktop. Save/copy needed text before updating either half. The UI retains text and pauses automatic retries after a failed save.
 
 ## Line endings
 
@@ -24,10 +24,10 @@ Commit to repo… depends on the agent having file and Git tools enabled; Draftr
 
 ## Platforms and retained history
 
-The backend uses POSIX locks, so it requires Linux or macOS. Revision files are retained without automatic pruning. There is no revision-browser, publication workflow or force-save API in this release.
+The backend uses POSIX locks, so it requires Linux or macOS. Revision files are retained without automatic pruning. History is a read-only revision browser; restoring goes through an ordinary version-checked save. There is no publishing workflow or blind force-save API.
 
 ## Diff fix in 0.1.1
 
 New suggestions now frame unified-diff lines correctly when a selected passage lacks its final newline. The original/replacement strings and saved Markdown are not normalized. Historical proposals keep their original recorded preview; the update does not rewrite previously accepted drafts or proposal records.
 
-The 0.1.1 fix has automated regression coverage. It still needs a native Desktop Diff-view smoke test after installing this candidate. The native selection → real model proposal → user Accept → exact persisted Markdown flow was verified on 0.1.0 before this candidate was prepared.
+The fix is included in 0.1.2 and has automated regression and browser-adapter coverage. It still needs a native Desktop Diff-view smoke test after installing this candidate. The native selection → real model proposal → user Accept → exact persisted Markdown flow was verified on 0.1.0 before this candidate was prepared.

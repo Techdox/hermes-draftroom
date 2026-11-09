@@ -13,7 +13,7 @@ RUNTIME_FILES = (
     'plugin.yaml', '__init__.py', 'draftroom_store.py', 'README.md', 'INSTALL.md',
     'API.md', 'LICENSE', 'CHANGELOG.md', 'KNOWN_ISSUES.md', 'VERIFICATION.md',
     'desktop/plugin.js', 'desktop/README.md', 'dashboard/manifest.json',
-    'dashboard/plugin_api.py', 'skills/blog/SKILL.md',
+    'dashboard/plugin_api.py', 'skills/blog/SKILL.md', 'assets/draftroom-logo.png', 'TESTING.md',
 )
 
 

@@ -1,59 +1,39 @@
-# Verification — Draftroom 0.1.1 release candidate
+# Verification — Draftroom 0.1.2 test candidate
 
-## Scope and result
+## Scope
 
-The candidate fixes the selected-paragraph Diff preview and adds release/submission preparation. The running installation was not overwritten during this work. Do not confuse the successful native 0.1.0 baseline with a native smoke test of the newly staged 0.1.1 candidate.
+This candidate preserves the useful independent-review additions and fixes the seven reproduced review findings. It is prepared for Nick's native test, not a claim that the new build is already accepted in Mac Desktop or entered in the hackathon. Earlier 0.1.0/0.1.1 evidence and immutable artifacts remain historical; Git history retains their verification documents.
 
-## Automated source checks
+## Independently exercised source checks
 
-- **83 Python tests passed** on Python 3.14 in the isolated project environment. Its newer Starlette TestClient emits one deprecation warning about httpx; there were no test failures.
-- The same **83 tests pass** with the installed Hermes-compatible FastAPI **0.133.1** and Starlette **1.9.0** dependencies, without that warning. No serving-runtime packages were changed.
-- The Diff regression was first observed failing: five cases failed and two passed. After the fix, all seven passed, including missing final newlines, multiline text, newline-only changes, deletion, CRLF and identical selections. The tests also verify that preview framing never changes saved Markdown.
-- Release tests independently verify the exact ZIP allowlist, source bytes, CRC, checksums, regular-file entries, deterministic output, no-overwrite behaviour, rejected symlinks/missing files and matching component versions.
-- Catalog-generator tests use explicitly labelled fixture URLs/SHAs, reject malformed pins and unsafe URLs without normalization, and compare the generated declaration with the actual single registered tool. No fixture pin is presented as a real publication.
-- `node --check desktop/plugin.js` and Git whitespace checks pass.
-- Plugin Doctor confirms runtime discovery, manifest parsing, import and registration of one tool for 0.1.1.
-- The normal Hermes plugin validator reports **`ok: true`, no warnings**, security scan safe, no core override, the public Desktop SDK surface, and matching declarations.
+- **177 Python tests passed** on Python 3.14 in the isolated project environment. One existing Starlette/httpx TestClient deprecation warning remains; there were no failures or skipped tests.
+- **32 Node controller tests passed**, with no failures or skips, using the declared public-SDK test double. These include delayed saves, approved-content changes, mutable push flags, stored/runtime conversation switches, recovery after failed saves, A→B→A preview ordering, closed/reopened panels and stale failures.
+- `node --check desktop/plugin.js` and `git diff --check` passed.
+- Public Plugin Doctor passed runtime discovery, manifest parsing, import and registration of one tool for 0.1.2, inside an owned SDK environment.
+- Plain Hermes catalog validation returned **`ok: true`, no warnings**, safe security scan, no core override and an SDK-only Desktop surface. This is not the full dependency-install gate.
+- Release tests independently assert the exact runtime file set and source bytes, CRC/checksums, regular files, deterministic output, refusal to overwrite artifacts, missing/symlinked-file rejection and matching component versions. The user-provided logo and native test guide are included explicitly; no private data or test runtime is added to the allowlist.
+- The loaded backend version is captured when its API imports. A regression proves that replacing a manifest does not make an old router claim new activation.
 
-## Browser acceptance of 0.1.1
+## Real browser / real backend checks
 
-**13 browser workflow checks passed**, with zero console/page errors, using the shipped Desktop module, the real FastAPI router and the real agent proposal handler against disposable files:
+**20 checks passed**, with no unexpected console/page errors, using the shipped module, real FastAPI API, actual disposable Markdown/revisions and a public-SDK host adapter:
 
-1. `/blog` opens beside chat and creates real Markdown.
-2. Debounced autosave writes exact UTF-8 content.
-3. Rewrite requests preserve the exact session, version, original and Unicode code-point range.
-4. A proposal appears without changing the article.
-5. Unified Diff correctly separates removed/added lines and marks a selection's absent final newline.
-6. Accept changes only the selected passage and retains prior content.
-7. Close/reopen and a full page reload recover saved text.
-8. Reject leaves Markdown unchanged.
-9. UI and API refuse dirty/stale acceptance.
-10. Failed saves retain text, pause automatic retries and recover explicitly.
-11. Profile switches do not leak private text or write to the wrong profile.
-12. A focused-chat/ambient-connection mismatch fails closed.
-13. A 380px-wide pane has no horizontal overflow and keeps review controls visible.
+- Thirteen core cases: `/blog`, exact UTF-8 autosave, exact Unicode selected-range requests, proposal-only generation, correct Diff framing, explicit Accept, persisted reopen/reload, Reject, stale/dirty rejection, failed-save recovery, owner switching, focus/connection mismatch and narrow-pane scroll reachability.
+- Five feature cases: real History preview/restore, exact file download, clipboard copy, confirmed version-checked conflict recovery and immutable no-push intent with disabled preparation controls.
+- Two safety cases: repeated History restores after an injected save failure retain both the original unsaved writing and the next recovery snapshot visibly; delayed A cannot overwrite the newer B selection, and Restore is disabled while selection loads.
 
-This browser environment uses an explicit **public-SDK host adapter** and labelled proposal fixtures. It is not an Electron recording or a model-generated native demo. The tests are not the submission video.
+The adapter uses labelled deterministic proposal fixtures and captures composer requests; it does not run another model or execute Git. Injected failure/delay cases operate only on task-owned test data. Narrow-pane controls can require scrolling inside the review section; this is not a claim of always-visible Accept/Reject buttons. Captured screenshots were inspected, including both recovery snapshots.
 
-## Real native baseline already verified on 0.1.0
+## Exact package and activation gates
 
-The user installed the UI in Mac Hermes Desktop and enabled the Agent component in the actual serving backend. A selected rewrite reached the existing conversation, the real `blog_draft` tool created a pending model-authored suggestion, and the user chose Accept. Readback confirmed accepted status, only the requested selection changed, the exact resulting Markdown was on disk, and the previous version remained in revision history.
+The delivered ZIP must independently pass extracted-artifact import/registration with checkout paths excluded and no active import side effects, plus plain Doctor/validation. Its accompanying checksum/verification receipt records the exact bytes. Building/staging files is distinct from activation; confirm the actual Desktop-serving backend reports `version: 0.1.2`, not just a newer manifest on disk.
 
-No direct draft-file edit, authentication bypass or alternate model client was used to make that native test pass.
+No serving-runtime dependency upgrade is required by these fixes. Preserve installed code for rollback and never overwrite `plugin-data/draftroom`. The Desktop file must be updated on the Mac separately from the backend.
 
-## Dependency-install admission boundary
+## Native and publication boundaries
 
-`hermes plugins validate --install-deps --json` was attempted inside an owned copy of the SDK and its dependency environment, not the serving installation. The validator checks returned `ok: true` and no warnings, **but dependency preparation did not complete**: the independent PM runtime was not installed and lazy installs were disabled. This is not a pass for the dependency-install phase. The plain validator and import checks ran with preprovisioned compatible dependencies.
+Actual Mac Desktop → existing agent → model proposal → human Accept → exact persisted Markdown was previously verified on **0.1.0**. It does not establish native acceptance of 0.1.2. See `TESTING.md` for the real user test and copy/download check.
 
-Run the complete dependency-install gate in a properly provisioned disposable Hermes environment, and require catalog CI after the source is published. Do not upgrade the serving runtime just to satisfy this preparation check.
+The earlier isolated `--install-deps` admission attempt did not prepare its independent PM runtime, despite plain validation returning success. The full dependency-install gate still needs a provisioned disposable environment or catalog CI; inspect stderr as well as JSON. Do not change the serving environment to conceal that prerequisite.
 
-## Pending release gates
-
-- Install/reload the candidate and recheck the native Diff view.
-- Verify a clean combined Agent + Desktop install from the eventual public repository.
-- Record a real, privacy-reviewed native demo under 90 seconds.
-- Configure the approved Git author/signing path, make the initial commit and publish the chosen repository. No author identity or commit SHA was invented.
-- Generate the catalog YAML from that exact clean commit, verify the public source/pin, open the catalog PR and inspect its actual CI.
-- Post the demo on X tagging `@NousResearch`, then submit the PR and X links through the official form, with publication approval.
-
-The prepared GitHub Actions workflow has not run remotely: there is no published repository/PR yet. This file records local evidence, not a CI badge or completed hackathon submission.
+A private Forgejo review/fix branch is not public hackathon publication. Nick's native acceptance comes first; then approve the public repository/author/signing path, freeze its actual full commit pin, raise the catalog PR, record/post the genuine under-90-second native demo and submit the two required links. No public PR, CI success, X post or form receipt is claimed here.

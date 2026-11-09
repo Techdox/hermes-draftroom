@@ -6,7 +6,7 @@ Draftroom is a Markdown writing companion beside the existing Hermes chat. `/blo
 
 - Repository: `<PUBLIC_REPO_URL>`
 - Pinned commit: `<FULL_40_CHAR_COMMIT_SHA>`
-- Release target: **0.1.1**; the pinned manifest and package must match.
+- Release target: **0.1.2**; the pinned manifest and package must match.
 - Proposed catalog file: `plugin-catalog/draftroom.yaml`
 - Native demo: `<DEMO_X_POST_URL>`
 - UI screenshot: `<PUBLIC_PRIVACY_REVIEWED_SCREENSHOT_URL>`
@@ -30,14 +30,14 @@ Requires a recent compatible public Desktop SDK and a POSIX backend (`fcntl` loc
 
 ## Data and behaviour disclosures
 
-Drafts, metadata, proposals and retained revisions live in the active backend profile's plugin-data directory. Desktop keeps unsaved buffers in memory, not localStorage; those buffers are lost on app/plugin reload. The UI autosaves and polls through the existing Hermes backend. Rewrites use the configured agent/provider and may leave the host under that provider's normal settings. No new credential store, telemetry, shell commands, unrelated-file access, standalone service or publishing endpoint is added. Prior revisions are not automatically pruned.
+Drafts, metadata, proposals and retained revisions live in the active backend profile's plugin-data directory. Desktop keeps unsaved buffers/recovery snapshots in memory, not localStorage; those buffers are lost on app/plugin reload. The UI autosaves and polls through the existing Hermes backend. Rewrites use the configured agent/provider and may leave the host under that provider's normal settings. Optional Commit to repo sends a frozen, user-initiated request to that same agent; any file/Git/network activity belongs to its existing tools and approvals, not plugin-executed Git. No new credential store, telemetry, standalone service or publishing endpoint is added. Prior revisions are not automatically pruned.
 
 ## Validation and evidence boundary
 
-- [x] Final 0.1.1 source: 83 Python tests and 13 browser workflow checks passed, including seven Diff regression cases. Plugin doctor, plain validator and JavaScript syntax checks passed. The no-overwrite ZIP's exact runtime files, source bytes, CRC and checksums were verified; extracted-artifact isolated import/registration and plain validation passed with no warnings.
+- [x] Final 0.1.2 source: 177 Python tests, 32 Node controller tests and 20 browser checks passed, including the Diff regressions and all seven review fixes. Source Doctor, plain validator and syntax checks passed with no warnings from validation. Exact delivered-package CRC/bytes, isolated import/registration and validation remain separately evidenced release gates.
 - [x] Separate actual native Mac 0.1.0 acceptance: selected rewrite through the existing agent and `blog_draft`, human Accept, exact backend Markdown verified, only the selected range changed, prior revision preserved.
 - [ ] At the exact proposed pin, run `hermes plugins validate <PINNED_CHECKOUT> --install-deps` in an isolated validation environment; review failures and warnings.
-- [ ] Install matching 0.1.1 halves and repeat native selection → pending review → human Accept → reopen persistence, including Original / Suggested / Diff. Attach a privacy-reviewed native screenshot and real demo.
+- [ ] Install matching 0.1.2 halves and repeat native selection → pending review → human Accept → reopen persistence, including Original / Suggested / Diff. Attach a privacy-reviewed native screenshot and real demo.
 - [ ] Public repository, full 40-character SHA, release version and catalog compatibility/capability metadata confirmed against the pinned tree.
 
-The 13 candidate browser checks used a public-SDK host adapter and controlled rewrite fixtures. They prove editor/backend workflows, not a native renderer or live LLM turn. The earlier native acceptance supplies that separate 0.1.0 evidence; it does not establish native acceptance of 0.1.1. The owned dependency-install admission attempt did not complete because its independent PM runtime was not provisioned; plain validation used preprovisioned compatible dependencies. Catalog CI and maintainer review remain unclaimed. See `VERIFICATION.md` for the full boundary.
+The 20 candidate browser checks used a public-SDK host adapter and controlled rewrite fixtures. They prove editor/backend workflows, not a native renderer or live LLM turn. The earlier native acceptance supplies that separate 0.1.0 evidence; it does not establish native acceptance of 0.1.2. The earlier owned dependency-install admission attempt did not complete because its independent PM runtime was not provisioned; plain validation used preprovisioned compatible dependencies. Catalog CI and maintainer review remain unclaimed. See `VERIFICATION.md` for the full boundary.

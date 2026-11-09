@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased — independent review pass
+## 0.1.2 — native test candidate
+
+- Fix all seven independently reproduced review findings: retain multiple unsaved recovery snapshots; fence History preview ordering; freeze commit content/path/message/push intent; recheck the focused conversation immediately before handoff; reject revision parent symlinks; and isolate metadata records with missing or non-string required fields.
+- Add deterministic delayed-response, failed-save, repeated-restore, same-owner focus-switch and malformed-record regressions.
+- Report the loaded backend version at `/status`, captured at import so staging files is not mistaken for activation.
+- Include the owner-provided Draftroom logo (published copy has metadata removed without changing image data) and the native `TESTING.md` handoff in the allowlisted package. Earlier versioned artifacts remain unchanged.
+- Public hackathon publication is gated on Nick's native test acceptance.
+
+### Included independent-review improvements
 
 - Fix: one unreadable draft (non-UTF-8 or oversized after an external edit, damaged metadata, or a crash mid-create) no longer breaks the whole library, `/blog` and the agent's `list`. Unreadable drafts are reported as `unavailable` and left untouched.
 - Fix: draft creation is atomic (staged then renamed), so a 2-second poll can no longer see a half-created draft and fail.

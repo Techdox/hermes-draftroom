@@ -226,8 +226,9 @@ class DraftStore:
 
     def _read(self, folder):
         metadata = self._json(folder / 'metadata.json', 8192)
-        if metadata.get('id') != folder.name or not isinstance(metadata.get('title'), str):
-            raise Invalid('Draft metadata does not match its directory; original preserved.')
+        if (metadata.get('id') != folder.name or
+                not all(isinstance(metadata.get(key), str) for key in ('id', 'title', 'session_id', 'created_at'))):
+            raise Invalid('Draft metadata is damaged or does not match its directory; original file preserved.')
         content = self._read_text(folder / 'draft.md', self.MAX_CONTENT_BYTES)
         proposal_path = folder / 'proposal.json'
         proposal = self._json(proposal_path, self.MAX_CONTENT_BYTES * 32 + 65536) if proposal_path.exists() or proposal_path.is_symlink() else None
@@ -342,7 +343,8 @@ class DraftStore:
             raise Invalid('Invalid revision ID.')
         folder = self._folder(draft_id)
         with self._locked(folder):
-            content = self._read_text(folder / 'revisions' / (revision_id + '.md'), self.MAX_CONTENT_BYTES)
+            revisions = self._directory(folder / 'revisions')
+            content = self._read_text(revisions / (revision_id + '.md'), self.MAX_CONTENT_BYTES)
         stamp, version = revision_id.split('-', 1)
         return {'id': revision_id, 'draft_id': draft_id, 'content': content, 'version': version,
                 'created_at': datetime.fromtimestamp(int(stamp) / 1e9, timezone.utc).isoformat()}

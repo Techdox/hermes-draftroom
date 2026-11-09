@@ -24,6 +24,9 @@ _spec.loader.exec_module(_core)
 router = APIRouter()
 log = logging.getLogger(__name__)
 MAX_REQUEST_BYTES = 1_376_256
+# Capture once at import: replacing files must not make an old loaded router
+# pretend that the new package has already been activated.
+VERSION = json.loads(Path(__file__).with_name('manifest.json').read_text(encoding='utf-8'))['version']
 
 
 def get_store():
@@ -65,7 +68,7 @@ async def _body(request):
 @router.get('/status')
 def status():
     store = get_store()
-    return {'name': 'draftroom', 'scope': store.scope, 'max_content_bytes': store.MAX_CONTENT_BYTES}
+    return {'name': 'draftroom', 'version': VERSION, 'scope': store.scope, 'max_content_bytes': store.MAX_CONTENT_BYTES}
 
 
 @router.get('/drafts')

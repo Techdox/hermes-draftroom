@@ -1,4 +1,5 @@
 """Exercise the shipped FastAPI router and actual agent handlers, not invented responses."""
+import hashlib
 import importlib.util
 import json
 import sys
@@ -36,6 +37,26 @@ def create(client, title='Test article', session='session-1'):
     response = client.post('/api/plugins/draftroom/drafts', json={'title': title, 'session_id': session})
     assert response.status_code == 201, response.text
     return response.json()
+
+
+METADATA_DAMAGE = [
+    pytest.param(field, damage, id=field + '-' + label)
+    for field in ('created_at', 'session_id')
+    for label, damage in (('missing', 'missing'), ('null', None), ('number', 42),
+                          ('boolean', False), ('array', []), ('object', {}))
+]
+
+
+def corrupt_metadata(store, draft_id, field, damage):
+    folder = store.drafts / draft_id
+    path = folder / 'metadata.json'
+    metadata = json.loads(path.read_text())
+    if damage == 'missing':
+        del metadata[field]
+    else:
+        metadata[field] = damage
+    path.write_text(json.dumps(metadata))
+    return folder, {p.name: p.read_bytes() for p in folder.iterdir()}
 
 
 def test_real_rest_workflow_survives_reopen(api):
@@ -214,6 +235,62 @@ def test_agent_list_survives_one_damaged_draft(plugin):
     assert result['unavailable'][0]['id'] == bad['id']
 
 
+@pytest.mark.parametrize('field,damage', METADATA_DAMAGE)
+def test_rest_malformed_metadata_is_isolated_and_preserved(api, field, damage):
+    client, store, _ = api
+    good, bad = create(client, 'Good'), create(client, 'Damaged')
+    folder, before = corrupt_metadata(store, bad['id'], field, damage)
+
+    for suffix in ('', '?session_id=session-1'):
+        response = client.get('/api/plugins/draftroom/drafts' + suffix)
+        assert response.status_code == 200
+        body = response.json()
+        assert [row['id'] for row in body['drafts']] == [good['id']]
+        assert [(row['id'], row['code']) for row in body['unavailable']] == [(bad['id'], 'invalid')]
+    response = client.get('/api/plugins/draftroom/drafts/' + bad['id'])
+    assert response.status_code == 400
+    assert response.json()['detail']['code'] == 'invalid'
+    assert client.get('/api/plugins/draftroom/drafts/' + good['id']).json() == good
+    assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
+
+
+@pytest.mark.parametrize('field,damage', METADATA_DAMAGE)
+def test_agent_malformed_metadata_is_isolated_and_preserved(plugin, field, damage):
+    module, store, _ = plugin
+    good, bad = store.create('Good', 'chat'), store.create('Damaged', 'chat')
+    folder, before = corrupt_metadata(store, bad['id'], field, damage)
+
+    for filters in ({}, {'session_id': 'chat'}):
+        result = json.loads(module.blog_draft({'action': 'list', **filters}))
+        assert result['ok'] is True
+        assert [row['id'] for row in result['drafts']] == [good['id']]
+        assert [(row['id'], row['code']) for row in result['unavailable']] == [(bad['id'], 'invalid')]
+    result = json.loads(module.blog_draft({'action': 'read', 'draft_id': bad['id']}))
+    assert result['ok'] is False and result['error']['code'] == 'invalid'
+    result = json.loads(module.blog_draft({'action': 'read', 'draft_id': good['id']}))
+    assert result['ok'] is True and result['content'] == good['content']
+    assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
+
+
+@pytest.mark.parametrize('field,damage', METADATA_DAMAGE)
+def test_blog_slash_creates_and_reopens_target_despite_malformed_metadata(plugin, field, damage):
+    module, store, events = plugin
+    good, bad = store.create('Good', 'chat'), store.create('Damaged', 'chat')
+    folder, before = corrupt_metadata(store, bad['id'], field, damage)
+
+    opened = module.handle_blog('Entirely new title', session_id='chat')
+    assert 'Draftroom opened **Entirely new title**' in opened
+    target_id = events[-1][1]
+    assert store.read(target_id)['title'] == 'Entirely new title'
+    assert module.handle_blog('  Entirely new title  ', session_id='chat') == opened
+    assert events == [('draft.opened', target_id), ('draft.opened', target_id)]
+    catalog = store.catalog('chat')
+    assert {row['id'] for row in catalog['drafts']} == {good['id'], target_id}
+    assert [(row['id'], row['code']) for row in catalog['unavailable']] == [(bad['id'], 'invalid')]
+    assert len(list(store.drafts.iterdir())) == 3
+    assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
+
+
 def test_blog_slash_with_same_title_reopens_instead_of_duplicating(plugin):
     module, store, _ = plugin
     module.handle_blog('Launch notes', session_id='chat-1')
@@ -237,3 +314,43 @@ def test_rest_revisions_are_read_only(api):
     assert client.get(path + '/revisions/not-valid').status_code == 400
     assert client.post(path + '/revisions/' + listing['revisions'][0]['id']).status_code == 405
     assert client.get(path).json()['content'] == 'Edited'
+
+
+@pytest.mark.parametrize('has_revisions', [False, True])
+def test_rest_absent_revision_returns_404_without_creating_history(api, has_revisions):
+    client, store, _ = api
+    d = create(client)
+    path = '/api/plugins/draftroom/drafts/' + d['id']
+    if has_revisions:
+        assert client.put(path, json={'content': 'Next', 'expected_version': d['version']}).status_code == 200
+    response = client.get(path + '/revisions/1-' + 'b' * 64)
+    assert response.status_code == 404
+    assert response.json()['detail']['code'] == 'not_found'
+    assert (store.drafts / d['id'] / 'revisions').exists() is has_revisions
+
+
+@pytest.mark.parametrize('link_kind', ['parent', 'leaf'])
+@pytest.mark.parametrize('dangling', [False, True])
+def test_rest_revision_symlinks_return_400_without_reading_outside(api, tmp_path, link_kind, dangling):
+    client, store, _ = api
+    d = create(client)
+    content = 'Outside-root revision marker\n'
+    revision_id = '1-' + hashlib.sha256(content.encode()).hexdigest()
+    outside = tmp_path / 'outside-revisions'
+    outside_file = outside / (revision_id + '.md')
+    if not dangling:
+        outside.mkdir()
+        outside_file.write_text(content)
+    revisions = store.drafts / d['id'] / 'revisions'
+    if link_kind == 'parent':
+        link, target = revisions, outside
+    else:
+        revisions.mkdir()
+        link, target = revisions / (revision_id + '.md'), outside_file
+    link.symlink_to(target, target_is_directory=link_kind == 'parent')
+    response = client.get('/api/plugins/draftroom/drafts/' + d['id'] + '/revisions/' + revision_id)
+    assert response.status_code == 400
+    assert response.json()['detail']['code'] == 'invalid'
+    assert content not in response.text
+    assert link.is_symlink() and link.readlink() == target
+    assert not outside.exists() if dangling else outside_file.read_text() == content

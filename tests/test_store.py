@@ -215,6 +215,58 @@ def test_corrupt_metadata_preserved_and_reported(store):
     assert p.read_text() == '{not valid JSON'
 
 
+@pytest.mark.parametrize('field', ['id', 'title', 'created_at', 'session_id'])
+@pytest.mark.parametrize('damage', ['missing', None, 42, False, [], {}],
+                         ids=['missing', 'null', 'number', 'boolean', 'array', 'object'])
+def test_malformed_metadata_is_invalid_and_isolated(store, field, damage):
+    good = draft(store, 'Readable draft')
+    bad = draft(store, 'Damaged metadata')
+    folder = store.drafts / bad['id']
+    metadata_path = folder / 'metadata.json'
+    metadata = json.loads(metadata_path.read_text())
+    if damage == 'missing':
+        del metadata[field]
+    else:
+        metadata[field] = damage
+    metadata_path.write_text(json.dumps(metadata))
+    before = {p.name: p.read_bytes() for p in folder.iterdir()}
+
+    with pytest.raises(Invalid):
+        store.read(bad['id'])
+    for session_id in (None, good['session_id']):
+        catalog = store.catalog(session_id)
+        assert [row['id'] for row in catalog['drafts']] == [good['id']]
+        assert [(row['id'], row['code']) for row in catalog['unavailable']] == [(bad['id'], 'invalid')]
+        assert [row['id'] for row in store.list(session_id)] == [good['id']]
+    assert store.read(good['id']) == good
+    assert {p.name: p.read_bytes() for p in folder.iterdir()} == before
+
+
+def test_valid_legacy_and_current_metadata_remain_readable_without_migration(store):
+    current = draft(store)
+    # The earlier store wrote these same four fields directly into its folder.
+    legacy_id = 'f' * 32
+    folder = store.drafts / legacy_id
+    folder.mkdir()
+    metadata = {'id': legacy_id, 'title': 'Legacy draft', 'session_id': '',
+                'created_at': '2025-01-02T03:04:05+00:00'}
+    metadata_bytes = json.dumps(metadata, indent=4).encode() + b'\n'
+    content_bytes = '# Legacy draft\r\n\r\nKia ora.\r\n'.encode()
+    (folder / 'metadata.json').write_bytes(metadata_bytes)
+    (folder / 'draft.md').write_bytes(content_bytes)
+
+    legacy = store.read(legacy_id)
+    assert {key: legacy[key] for key in metadata} == metadata
+    assert legacy['content'].encode() == content_bytes
+    assert store.read(current['id']) == current
+    catalog = store.catalog()
+    assert {row['id'] for row in catalog['drafts']} == {legacy_id, current['id']}
+    assert catalog['unavailable'] == []
+    assert [row['id'] for row in store.list('')] == [legacy_id]
+    assert (folder / 'metadata.json').read_bytes() == metadata_bytes
+    assert (folder / 'draft.md').read_bytes() == content_bytes
+
+
 def test_private_permissions(store):
     d = draft(store)
     folder = store.root / 'drafts' / d['id']
@@ -306,14 +358,46 @@ def test_revision_ids_reject_traversal(store, bad):
         store.revision(d['id'], bad)
 
 
-def test_unknown_revision_is_missing_and_symlinked_revision_refused(store, tmp_path):
+@pytest.mark.parametrize('has_revisions', [False, True])
+def test_unknown_revision_is_missing_without_creating_history(store, has_revisions):
     d = draft(store)
-    store.save(d['id'], 'Next', d['version'])
+    if has_revisions:
+        store.save(d['id'], 'Next', d['version'])
     with pytest.raises(Missing):
         store.revision(d['id'], '1-' + 'b' * 64)
+    assert (store.drafts / d['id'] / 'revisions').exists() is has_revisions
+
+
+@pytest.mark.parametrize('dangling', [False, True])
+def test_symlinked_revision_file_is_refused_and_preserved(store, tmp_path, dangling):
+    d = draft(store)
+    store.save(d['id'], 'Next', d['version'])
     secret = tmp_path / 'secret.md'
-    secret.write_text('outside')
-    (store.root / 'drafts' / d['id'] / 'revisions' / ('2-' + 'c' * 64 + '.md')).symlink_to(secret)
-    assert all(row['id'] != '2-' + 'c' * 64 for row in store.revisions(d['id'])['revisions'])
-    with pytest.raises(Invalid):
-        store.revision(d['id'], '2-' + 'c' * 64)
+    content = 'outside'
+    revision_id = '2-' + hashlib.sha256(content.encode()).hexdigest()
+    if not dangling:
+        secret.write_text(content)
+    link = store.drafts / d['id'] / 'revisions' / (revision_id + '.md')
+    link.symlink_to(secret)
+    assert all(row['id'] != revision_id for row in store.revisions(d['id'])['revisions'])
+    with pytest.raises(Invalid, match='Symlinked data files'):
+        store.revision(d['id'], revision_id)
+    assert link.is_symlink() and link.readlink() == secret
+    assert not secret.exists() if dangling else secret.read_text() == content
+
+
+@pytest.mark.parametrize('dangling', [False, True])
+def test_symlinked_revisions_directory_is_refused_and_preserved(store, tmp_path, dangling):
+    d = draft(store)
+    outside = tmp_path / 'outside-revisions'
+    content = 'Outside-root revision marker\n'
+    revision_id = '1-' + hashlib.sha256(content.encode()).hexdigest()
+    if not dangling:
+        outside.mkdir()
+        (outside / (revision_id + '.md')).write_text(content)
+    link = store.drafts / d['id'] / 'revisions'
+    link.symlink_to(outside, target_is_directory=True)
+    with pytest.raises(Invalid, match='Symlinked data directories'):
+        store.revision(d['id'], revision_id)
+    assert link.is_symlink() and link.readlink() == outside
+    assert not outside.exists() if dangling else (outside / (revision_id + '.md')).read_text() == content

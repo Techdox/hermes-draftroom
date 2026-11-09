@@ -15,25 +15,26 @@ Official [announcement](https://x.com/NousResearch/status/2118094256438936062) a
 ## Established gates
 
 - [x] Scope frozen: `/blog`, real Markdown beside existing chat, selected rewrite, Original / Suggested / Diff review, human Accept/Reject and safe local saving. No publishing/SEO platform, second LLM client or core patches.
-- [x] Final 0.1.1 candidate: 83 Python tests and 13 browser workflow checks passed. Seven Diff regression cases cover the no-final-newline fix. Browser adapter/fixture checks are not represented as native model evidence.
+- [x] Final 0.1.2 candidate: 177 Python tests, 32 Node controller tests and 20 browser checks passed, covering the no-final-newline fix and all seven reviewed issues. Adapter/fixture checks are not represented as native model evidence.
 - [x] Actual native Mac 0.1.0 co-writing accepted: real agent/tool proposal, human Accept, exact Markdown verified, selection-only change and prior revision retained.
-- [x] Four local submission assets prepared. Nothing committed, pushed, posted or submitted by this preparation task.
+- [x] Four local submission assets prepared. Private Forgejo review/fix work is separate from the still-pending public repository, catalog PR, demo post and form submission.
 
 ## Release and native recording gates: not yet signed off
 
-- [x] 0.1.1 Diff fix/regression, installation docs and no-overwrite runtime ZIP prepared. Exact ZIP membership, source bytes, CRC and checksums verified; extracted isolated import/registration, plugin doctor and plain validator passed with no warnings. Earlier snapshots/evidence retained; live 0.1.0 not overwritten.
+- [x] 0.1.2 fixes/regressions, installation/test docs and no-overwrite packaging prepared. Source Doctor/plain validation passed with no warnings; earlier snapshots/evidence retained.
+- [x] Exact delivered ZIP membership/bytes/checksums, isolated import/registration and plain validation verified against the 0.1.2 candidate; the actual accompanying receipt remains separate from activation/native acceptance.
 - [ ] Full `--install-deps` admission completes in an owned, fully provisioned environment or catalog CI. The independent PM runtime was unavailable in the local admission attempt; this is not a pass for dependency preparation. Do not change the serving runtime to make this gate pass.
-- [ ] Both backend and Mac UI use the final matching 0.1.1 release. Verify the actual Desktop-serving process loads the tool/skill; do not infer this from gateway enablement.
-- [ ] Native 0.1.1: select a paragraph without its final newline; use the real configured agent; verify pending review does not change the file; compare Original / Suggested / Diff; actually Accept; verify only the selection changed and a prior revision exists; close/reopen and confirm persistence.
+- [ ] Both backend and Mac UI use the final matching 0.1.2 release. Verify the actual Desktop-serving process loads the tool/skill; do not infer this from gateway enablement.
+- [ ] Native 0.1.2: select a paragraph without its final newline; use the real configured agent; verify pending review does not change the file; compare Original / Suggested / Diff; actually Accept; verify only the selection changed and a prior revision exists; close/reopen and confirm persistence.
 - [ ] Rehearse once, then record the continuous **78-second** native path in `DEMO_SCRIPT.md`. No fixture rewrite, adapter recording, hidden wait or fabricated acceptance.
 - [ ] Inspect the actual export: readable UI, clear narration, duration **under 90 seconds**, and privacy checklist passed frame by frame.
 
 ## Identity, repository and publication approvals
 
-- [ ] User supplies/approves Git author identity and existing signing policy. Do not invent identity or bypass signing; the initial commit is blocked by unset author details.
+- [ ] Confirm the public repository author/signing path. Private feature commits reuse the established Nova identity; do not invent a public identity or bypass required production signing.
 - [ ] User approves the public repository owner/name and first commit, remote creation and push. No owner, URL or SHA is assumed.
 - [ ] Final public tree is reviewed for private data, local paths, caches and credentials. No credentials/access search is part of this task.
-- [ ] Full 40-character commit pin, matching 0.1.1 version, truthful compatibility/capability metadata and public cloneability verified. Release owner prepares the catalog entry separately.
+- [ ] Full 40-character commit pin, matching 0.1.2 version, truthful compatibility/capability metadata and public cloneability verified. Release owner prepares the catalog entry separately.
 - [ ] Final pinned checkout passes isolated catalog validation; release checks and native evidence are attached with their actual version/scope.
 - [ ] User approves the exact public repo contents, catalog PR body/screenshots, X caption/video and form submission **before** each external write.
 - [ ] Replace every pending token below and in the copy. X draft is **250 literal / 263 two-link-weighted characters**; recheck the final caption after replacement.

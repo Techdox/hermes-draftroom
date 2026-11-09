@@ -1,5 +1,7 @@
 # Draftroom
 
+<img src="assets/draftroom-logo.png" alt="Draftroom: a paper chat bubble, highlighted passage and fountain pen" width="160" />
+
 **Write beside your Hermes conversation. Keep the draft, not a pile of chat replies.**
 
 Type `/blog My next article` to open a Markdown draft beside chat. Write directly, or select a passage and ask for a rewrite. Compare the original and suggestion, then decide what stays.
@@ -32,7 +34,7 @@ After catalog admission, `hermes plugins install draftroom` installs the reviewe
 
 ### Development / local ZIP install
 
-See [INSTALL.md](INSTALL.md) for the explicit two-machine layout, activation checks, updating an existing manual copy, and troubleshooting. No automatic activation workaround or service restart is built into this plugin.
+See [INSTALL.md](INSTALL.md) for the explicit two-machine layout, activation checks, updating an existing manual copy, and troubleshooting. Use [TESTING.md](TESTING.md) for the native test checklist before release. No automatic activation workaround or service restart is built into this plugin.
 
 **Requirements:** Hermes **0.23.0 or newer**, a recent Hermes Desktop with the required public SDK doors, and a **Linux or macOS backend**. The Python store uses POSIX `fcntl` locks. The Desktop client can be on another machine; its UI availability depends on that client's SDK version.
 
@@ -103,7 +105,7 @@ See [API.md](API.md) for the REST contract, [VERIFICATION.md](VERIFICATION.md) f
 
 ## Licence
 
-MIT. Prepared release candidate: **0.1.1**.
+MIT. Prepared test candidate: **0.1.2**. Public hackathon publication follows native user acceptance.
 
 ## Official references
 

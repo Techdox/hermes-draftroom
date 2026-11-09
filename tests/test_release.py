@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 EXPECTED = {'plugin.yaml', '__init__.py', 'draftroom_store.py', 'README.md', 'INSTALL.md',
             'API.md', 'LICENSE', 'CHANGELOG.md', 'KNOWN_ISSUES.md', 'VERIFICATION.md',
             'desktop/plugin.js', 'desktop/README.md', 'dashboard/manifest.json',
-            'dashboard/plugin_api.py', 'skills/blog/SKILL.md'}
+            'dashboard/plugin_api.py', 'skills/blog/SKILL.md', 'assets/draftroom-logo.png', 'TESTING.md'}
 
 
 def source(tmp_path):
@@ -30,7 +30,7 @@ def test_package_is_exact_and_excludes_untracked_private_material(tmp_path):
     (root / 'private-draft.md').write_text('Fixture must not ship')
     result = build_release(root, tmp_path / 'out')
     archive, checksums = Path(result['archive']), Path(result['checksums'])
-    assert archive.name == 'draftroom-0.1.1.zip'
+    assert archive.name == 'draftroom-0.1.2.zip'
     with zipfile.ZipFile(archive) as z:
         assert z.testzip() is None
         assert set(z.namelist()) == {'draftroom/' + name for name in EXPECTED}
@@ -39,6 +39,17 @@ def test_package_is_exact_and_excludes_untracked_private_material(tmp_path):
     rows = [line.split('  ', 1) for line in checksums.read_text().splitlines()]
     assert rows[0] == [hashlib.sha256(archive.read_bytes()).hexdigest(), archive.name]
     assert len(rows) == len(EXPECTED) + 1
+
+
+def test_owner_logo_is_packaged_without_byte_changes(tmp_path):
+    root = source(tmp_path)
+    logo = root / 'assets/draftroom-logo.png'
+    logo.parent.mkdir(exist_ok=True)
+    logo.write_bytes((ROOT / 'assets/draftroom-logo.png').read_bytes())
+    assert logo.read_bytes().startswith(b'\x89PNG\r\n\x1a\n')
+    result = build_release(root, tmp_path / 'branded')
+    with zipfile.ZipFile(result['archive']) as archive:
+        assert archive.read('draftroom/assets/draftroom-logo.png') == logo.read_bytes()
 
 
 def test_identical_sources_produce_identical_zip_bytes(tmp_path):

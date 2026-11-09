@@ -1,6 +1,6 @@
 # Independent review: Draftroom
 
-This is the 0.1.1 candidate for a small Hermes Agent + Desktop writing plugin. The private Forgejo branch is for independent model/human review, not a published hackathon entry or a deployed update. Read `README.md`, `API.md`, `VERIFICATION.md` and `KNOWN_ISSUES.md` first.
+This is the 0.1.2 candidate for a small Hermes Agent + Desktop writing plugin. The private Forgejo branch is for independent model/human review, not a published hackathon entry or a deployed update. Read `README.md`, `API.md`, `VERIFICATION.md` and `KNOWN_ISSUES.md` first.
 
 ## Product boundary
 
@@ -44,9 +44,9 @@ Hermes doctor/validator checks require a compatible, separately provisioned host
 
 ## Evidence already available
 
-- Candidate 0.1.1: **83 Python tests** and **13 browser workflow checks** passed. Packaged bytes/checksums, isolated import/registration and plain Hermes validation passed. The Python suite also passed from the extracted source kit.
+- Candidate 0.1.2: **177 Python tests**, **32 Node controller tests** and **20 browser checks** passed. All seven reproduced review findings have targeted regression coverage. Source Doctor/plain validation passed; exact delivered-package checks are recorded separately from source and native acceptance.
 - Browser checks used the real plugin UI/backend through a public-SDK host adapter with controlled proposal fixtures. They are not a native model demo.
 - Native 0.1.0: actual Mac Desktop selected rewrite through the existing conversation/agent, real proposal, human Accept, exact selected replacement persisted and prior revision retained.
-- Still pending: native 0.1.1 Diff/clean-install acceptance and recording, full dependency-install admission, public source/catalog PR, X demo and form submission. The independent PM runtime was unavailable for the owned `--install-deps` attempt; successful plain validation does not make that installation gate pass.
+- Still pending: native 0.1.2 Diff/clean-install acceptance and recording, full dependency-install admission, public source/catalog PR, X demo and form submission. The independent PM runtime was unavailable for the owned `--install-deps` attempt; successful plain validation does not make that installation gate pass.
 
 Return a prioritised findings list first. Keep optional polish separate from blocking bugs. Any requested implementation belongs on a new feature branch; do not amend this review baseline, force-push or update an installed copy without approval.

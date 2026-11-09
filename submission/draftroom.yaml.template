@@ -9,7 +9,7 @@ maintainer: SUBMITTING_GITHUB_HANDLE_REQUIRED
 tier: community
 category: desktop
 requires_hermes: ">=0.23.0"
-version: "0.1.1"
+version: "0.1.2"
 description: "A Markdown draft beside Hermes chat, with selected-text rewrites and explicit Accept/Reject review. See the generated entry for complete behaviour disclosure."
 platforms: [linux, macos]
 capabilities:
