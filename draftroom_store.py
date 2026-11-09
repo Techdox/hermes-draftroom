@@ -12,6 +12,7 @@ import hashlib
 import json
 import os
 import re
+import shutil
 import stat
 import tempfile
 import time
@@ -46,6 +47,7 @@ class TooLarge(StoreError):
 
 _ID = re.compile(r'[0-9a-f]{32}\Z')
 _VERSION = re.compile(r'[0-9a-f]{64}\Z')
+_REVISION = re.compile(r'([0-9]{1,20})-([0-9a-f]{64})\.md\Z')
 
 
 def _now():
@@ -153,14 +155,18 @@ class DraftStore:
                 stream.flush()
                 os.fsync(stream.fileno())
             os.replace(temporary, path)
-            dir_fd = os.open(path.parent, os.O_RDONLY)
-            try:
-                os.fsync(dir_fd)
-            finally:
-                os.close(dir_fd)
+            DraftStore._fsync_dir(path.parent)
         finally:
             if os.path.exists(temporary):
                 os.unlink(temporary)
+
+    @staticmethod
+    def _fsync_dir(path):
+        dir_fd = os.open(path, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
 
     @classmethod
     def _write_json(cls, path, value):
@@ -203,12 +209,19 @@ class DraftStore:
         if not isinstance(session_id, str) or len(session_id) > 256:
             raise Invalid('Invalid session ID.')
         draft_id = uuid.uuid4().hex
-        folder = self.drafts / draft_id
-        folder.mkdir(mode=0o700)
         metadata = {'id': draft_id, 'title': title, 'session_id': session_id, 'created_at': _now()}
-        with self._locked(folder):
-            self._write_json(folder / 'metadata.json', metadata)
-            self._atomic(folder / 'draft.md', '# ' + title + '\n\n')
+        # Build the draft in a hidden staging directory and rename it into place, so
+        # a concurrent list/poll never sees a half-created draft (and a crash leaves
+        # only an ignored '.creating-*' directory rather than a broken library entry).
+        staging = Path(tempfile.mkdtemp(prefix='.creating-', dir=self.drafts))
+        try:
+            self._write_json(staging / 'metadata.json', metadata)
+            self._atomic(staging / 'draft.md', '# ' + title + '\n\n')
+            os.rename(staging, self.drafts / draft_id)
+        except BaseException:
+            shutil.rmtree(staging, ignore_errors=True)
+            raise
+        self._fsync_dir(self.drafts)
         return self.read(draft_id)
 
     def _read(self, folder):
@@ -227,17 +240,31 @@ class DraftStore:
         with self._locked(folder):
             return self._read(folder)
 
-    def list(self, session_id=None):
+    def catalog(self, session_id=None):
+        """List readable drafts and report unreadable ones instead of failing them all.
+
+        One damaged draft (externally edited as non-UTF-8, over the size limit,
+        corrupt metadata) must not hide every other draft from the library, /blog
+        or the agent. Unreadable files are reported, never repaired or deleted.
+        """
         if session_id is not None and (not isinstance(session_id, str) or len(session_id) > 256):
             raise Invalid('Invalid session ID.')
-        results = []
+        results, unavailable = [], []
         for path in self.drafts.iterdir():
             if not _ID.fullmatch(path.name):
                 continue
-            draft = self.read(path.name)
+            try:
+                draft = self.read(path.name)
+            except StoreError as exc:
+                unavailable.append({'id': path.name, 'code': exc.code, 'message': str(exc)})
+                continue
             if session_id is None or draft['session_id'] == session_id:
                 results.append({key: draft[key] for key in ['id', 'title', 'session_id', 'version', 'created_at', 'updated_at']})
-        return sorted(results, key=lambda value: value['updated_at'], reverse=True)
+        return {'drafts': sorted(results, key=lambda value: value['updated_at'], reverse=True),
+                'unavailable': sorted(unavailable, key=lambda value: value['id'])}
+
+    def list(self, session_id=None):
+        return self.catalog(session_id)['drafts']
 
     @staticmethod
     def _check_version(draft, expected):
@@ -291,6 +318,34 @@ class DraftStore:
                         'diff': _review_diff(original, replacement)}
             self._write_json(folder / 'proposal.json', proposal)
             return self._read(folder)
+
+    def revisions(self, draft_id, limit=100):
+        """Newest-first prior versions. Read-only: restoring goes through a normal save."""
+        folder = self._folder(draft_id)
+        with self._locked(folder):
+            path = folder / 'revisions'
+            if not path.exists():
+                return {'id': draft_id, 'revisions': [], 'total': 0}
+            self._directory(path)
+            rows = []
+            for item in path.iterdir():
+                match = _REVISION.fullmatch(item.name)
+                if not match or item.is_symlink() or not item.is_file():
+                    continue
+                rows.append({'id': item.stem, 'version': match.group(2), 'bytes': item.stat().st_size,
+                             'created_at': datetime.fromtimestamp(int(match.group(1)) / 1e9, timezone.utc).isoformat()})
+        rows.sort(key=lambda row: int(row['id'].split('-', 1)[0]), reverse=True)
+        return {'id': draft_id, 'revisions': rows[:limit], 'total': len(rows)}
+
+    def revision(self, draft_id, revision_id):
+        if not isinstance(revision_id, str) or not _REVISION.fullmatch(revision_id + '.md'):
+            raise Invalid('Invalid revision ID.')
+        folder = self._folder(draft_id)
+        with self._locked(folder):
+            content = self._read_text(folder / 'revisions' / (revision_id + '.md'), self.MAX_CONTENT_BYTES)
+        stamp, version = revision_id.split('-', 1)
+        return {'id': revision_id, 'draft_id': draft_id, 'content': content, 'version': version,
+                'created_at': datetime.fromtimestamp(int(stamp) / 1e9, timezone.utc).isoformat()}
 
     @staticmethod
     def _proposal(draft, proposal_id):

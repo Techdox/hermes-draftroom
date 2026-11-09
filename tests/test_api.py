@@ -190,3 +190,50 @@ def test_real_registration_declares_only_the_frozen_scope(plugin):
     assert [name for name, _ in ctx.commands] == ['blog']
     assert ctx.skills[0][1].is_file()
     assert module.SCHEMA['parameters']['properties']['action']['enum'] == ['list', 'read', 'create', 'propose']
+
+
+def test_rest_list_reports_unreadable_drafts_without_failing(api):
+    client, store, _ = api
+    good, bad = create(client, 'Good'), create(client, 'Damaged')
+    (store.root / 'drafts' / bad['id'] / 'draft.md').write_bytes(b'\xff\xfe broken')
+    response = client.get('/api/plugins/draftroom/drafts')
+    assert response.status_code == 200
+    body = response.json()
+    assert [row['id'] for row in body['drafts']] == [good['id']]
+    assert body['unavailable'][0]['id'] == bad['id']
+    assert client.get('/api/plugins/draftroom/drafts/' + bad['id']).status_code == 400
+
+
+def test_agent_list_survives_one_damaged_draft(plugin):
+    module, store, _ = plugin
+    good, bad = store.create('Good', 'chat'), store.create('Damaged', 'chat')
+    (store.root / 'drafts' / bad['id'] / 'metadata.json').write_text('{oops')
+    result = json.loads(module.blog_draft({'action': 'list'}))
+    assert result['ok'] is True
+    assert [row['id'] for row in result['drafts']] == [good['id']]
+    assert result['unavailable'][0]['id'] == bad['id']
+
+
+def test_blog_slash_with_same_title_reopens_instead_of_duplicating(plugin):
+    module, store, _ = plugin
+    module.handle_blog('Launch notes', session_id='chat-1')
+    module.handle_blog('  Launch notes  ', session_id='chat-1')
+    assert len(store.list('chat-1')) == 1
+    module.handle_blog('Different post', session_id='chat-1')
+    assert len(store.list('chat-1')) == 2
+    module.handle_blog('Launch notes', session_id='chat-2')
+    assert len(store.list('chat-2')) == 1
+
+
+def test_rest_revisions_are_read_only(api):
+    client, store, _ = api
+    d = create(client)
+    path = '/api/plugins/draftroom/drafts/' + d['id']
+    client.put(path, json={'content': 'Edited', 'expected_version': d['version']})
+    listing = client.get(path + '/revisions').json()
+    assert listing['total'] == 1 and listing['scope'] == store.scope
+    rev = client.get(path + '/revisions/' + listing['revisions'][0]['id']).json()
+    assert rev['content'] == d['content']
+    assert client.get(path + '/revisions/not-valid').status_code == 400
+    assert client.post(path + '/revisions/' + listing['revisions'][0]['id']).status_code == 405
+    assert client.get(path).json()['content'] == 'Edited'

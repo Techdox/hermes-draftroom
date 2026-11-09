@@ -71,7 +71,7 @@ def status():
 @router.get('/drafts')
 def list_drafts(session_id: str | None = None):
     store = get_store()
-    return {'drafts': _run(store.list, session_id), 'scope': store.scope}
+    return {**_run(store.catalog, session_id), 'scope': store.scope}
 
 
 @router.post('/drafts', status_code=201)
@@ -86,6 +86,18 @@ async def create_draft(request: Request):
 @router.get('/drafts/{draft_id}')
 def read_draft(draft_id: str):
     return _run(get_store().read, draft_id)
+
+
+@router.get('/drafts/{draft_id}/revisions')
+def list_revisions(draft_id: str):
+    store = get_store()
+    return {**_run(store.revisions, draft_id), 'scope': store.scope}
+
+
+@router.get('/drafts/{draft_id}/revisions/{revision_id}')
+def read_revision(draft_id: str, revision_id: str):
+    store = get_store()
+    return {**_run(store.revision, draft_id, revision_id), 'scope': store.scope}
 
 
 @router.put('/drafts/{draft_id}')

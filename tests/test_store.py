@@ -226,3 +226,94 @@ def test_empty_or_multiline_titles_rejected(store):
     for title in ['', '   ', 'Hello\nWorld', 123, 'x' * 241]:
         with pytest.raises(Invalid):
             store.create(title, 'chat-1')
+
+
+@pytest.mark.parametrize('damage', ['invalid_utf8', 'oversized', 'corrupt_metadata', 'missing_markdown'])
+def test_one_damaged_draft_does_not_hide_the_library(store, damage):
+    good = draft(store, 'Readable draft')
+    bad = draft(store, 'Edited elsewhere')
+    folder = store.root / 'drafts' / bad['id']
+    if damage == 'invalid_utf8':
+        (folder / 'draft.md').write_bytes('caf\xe9'.encode('latin-1'))
+    elif damage == 'oversized':
+        (folder / 'draft.md').write_text('x' * (store.MAX_CONTENT_BYTES + 1))
+    elif damage == 'corrupt_metadata':
+        (folder / 'metadata.json').write_text('{not json')
+    else:
+        (folder / 'draft.md').unlink()
+    before = sorted((p.name, p.read_bytes()) for p in folder.iterdir() if p.is_file())
+    listing = store.catalog()
+    assert [row['id'] for row in listing['drafts']] == [good['id']]
+    assert [row['id'] for row in listing['unavailable']] == [bad['id']]
+    assert listing['unavailable'][0]['code'] in {'invalid', 'too_large', 'not_found'}
+    assert [row['id'] for row in store.list()] == [good['id']]
+    # Reported, never repaired or deleted.
+    assert sorted((p.name, p.read_bytes()) for p in folder.iterdir() if p.is_file()) == before
+
+
+def test_create_is_atomic_for_concurrent_listing(store, monkeypatch):
+    seen = []
+    atomic = store._atomic
+    def observe(path, content):
+        seen.append(store.catalog())  # A poll landing in the middle of create.
+        return atomic(path, content)
+    monkeypatch.setattr(store, '_atomic', observe)
+    created = draft(store)
+    assert seen and all(view == {'drafts': [], 'unavailable': []} for view in seen)
+    assert [row['id'] for row in store.list()] == [created['id']]
+    assert sorted(p.name for p in store.drafts.iterdir()) == [created['id']]
+
+
+def test_failed_create_leaves_no_partial_draft(store, monkeypatch):
+    atomic = store._atomic
+    def fail(path, content):
+        if path.name == 'draft.md':
+            raise OSError('Simulated disk full')
+        return atomic(path, content)
+    monkeypatch.setattr(store, '_atomic', fail)
+    with pytest.raises(OSError):
+        draft(store)
+    assert list(store.drafts.iterdir()) == []
+    assert store.catalog() == {'drafts': [], 'unavailable': []}
+
+
+def test_revisions_list_newest_first_and_read_exact_bytes(store):
+    d = draft(store)
+    first = store.save(d['id'], 'Second version\r\n', d['version'])
+    store.save(d['id'], 'Third version', first['version'])
+    listing = store.revisions(d['id'])
+    assert listing['total'] == 2
+    assert [row['version'] for row in listing['revisions']] == [first['version'], d['version']]
+    assert store.revision(d['id'], listing['revisions'][0]['id'])['content'] == 'Second version\r\n'
+    assert store.revision(d['id'], listing['revisions'][1]['id'])['content'] == d['content']
+    assert store.read(d['id'])['content'] == 'Third version'  # Listing/reading never restores.
+
+
+def test_revisions_empty_and_limit(store):
+    d = draft(store)
+    assert store.revisions(d['id']) == {'id': d['id'], 'revisions': [], 'total': 0}
+    current = d
+    for n in range(4):
+        current = store.save(d['id'], f'v{n}', current['version'])
+    assert len(store.revisions(d['id'], limit=2)['revisions']) == 2
+    assert store.revisions(d['id'], limit=2)['total'] == 4
+
+
+@pytest.mark.parametrize('bad', ['../draft', '1-' + 'a' * 63, 'x-' + 'a' * 64, '', None, '1-' + 'a' * 64 + '/../x'])
+def test_revision_ids_reject_traversal(store, bad):
+    d = draft(store)
+    with pytest.raises(Invalid):
+        store.revision(d['id'], bad)
+
+
+def test_unknown_revision_is_missing_and_symlinked_revision_refused(store, tmp_path):
+    d = draft(store)
+    store.save(d['id'], 'Next', d['version'])
+    with pytest.raises(Missing):
+        store.revision(d['id'], '1-' + 'b' * 64)
+    secret = tmp_path / 'secret.md'
+    secret.write_text('outside')
+    (store.root / 'drafts' / d['id'] / 'revisions' / ('2-' + 'c' * 64 + '.md')).symlink_to(secret)
+    assert all(row['id'] != '2-' + 'c' * 64 for row in store.revisions(d['id'])['revisions'])
+    with pytest.raises(Invalid):
+        store.revision(d['id'], '2-' + 'c' * 64)

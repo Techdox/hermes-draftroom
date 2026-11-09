@@ -13,6 +13,7 @@ Draftroom is deliberately small: **draft → discuss → revise → review → s
 - **Selected changes.** Ask about a passage without replacing the rest of the article.
 - **You stay in control.** AI edits remain suggestions until you choose **Accept**. **Reject** keeps the article unchanged.
 - **Safe saving.** Autosave and Ctrl/Cmd+S check the saved version before writing. Older edits cannot silently overwrite newer ones. Prior content is kept as a revision.
+- **Take it with you.** Copy the Markdown, save it as a `.md` file, browse earlier versions, or ask your agent to commit it to a Git repository.
 - **A native workspace.** The editor opens to the right of chat and uses Hermes's public Desktop SDK and UI controls. No core patches.
 
 ## Install
@@ -43,8 +44,15 @@ See [INSTALL.md](INSTALL.md) for the explicit two-machine layout, activation che
 4. Select a passage, enter a rewrite instruction, and choose **Rewrite**.
 5. Review **Original / Suggested** or **Diff**. **Accept** saves only that selected change; **Reject** leaves the draft alone.
 6. Close the pane and reopen it from the palette when you want to continue. Saved drafts remain in the library.
+7. Under **More**: **Copy Markdown**, **Save .md file** (a download of the editor text), **History** (preview any earlier version and restore it into the editor; restoring saves as a new version), and **Commit to repo…**.
 
-If another editor changed the file, a suggestion became stale, or you changed connection/profile, Draftroom pauses instead of force-saving. Keep or copy your unsaved text and reconcile before proceeding. There is no force-save button.
+Writing shortcuts: Ctrl/Cmd+S saves; Ctrl/Cmd+Enter in the instruction box requests the rewrite; the preset chips fill in common instructions.
+
+### Commit to a repository
+
+**Commit to repo…** asks *your Hermes agent in this conversation* to write the saved draft to a file path you give and commit it, pushing only if you tick the box. Draftroom itself never runs Git, holds credentials or makes network calls: the agent uses whatever file and Git tools you have enabled, with their normal approval prompts. If your agent has no Git tools, it will say so; use **Save .md file** instead.
+
+If another editor changed the file, a suggestion became stale, or you changed connection/profile, Draftroom pauses instead of force-saving. Compare the saved version, then choose **Use saved version…** or **Keep my version…**. Both need a second confirming click; keeping yours saves against the exact saved version you were shown, and that version stays in revision history. There is no blind force-save.
 
 ## Privacy and behaviour disclosure
 
@@ -53,6 +61,7 @@ If another editor changed the file, a suggestion became stale, or you changed co
 - The plugin makes **no direct third-party network calls**, requests no credentials, starts no external service, runs no shell commands and has no telemetry or self-updater. While the editor is open it polls its own scoped backend for updates.
 - Article text is not copied into browser localStorage. Unsaved buffers are held in owner-scoped plugin memory: they survive pane close/reopen and connection/profile switches, but **not** plugin/window reload or quitting Desktop. Saved files survive independently.
 - Each draft is limited to **256 KiB** of UTF-8 Markdown. Prior revisions are retained, not silently pruned.
+- **Commit to repo…** only sends a chat message to your agent. The Git work, and any credentials or network access it needs, belong to the agent's own tools and approvals, not to Draftroom. Path and commit message are passed as data; the skill refuses Git work that the user didn't explicitly request.
 - The `blog_draft` tool can **create, list, read and propose**. It cannot accept, force-save, publish or delete. This is the plugin tool's boundary, not a sandbox around other tools the user separately enables in Hermes.
 - Like other native plugins, this is trusted code running with the host user's permissions. Review the source before installing.
 
@@ -77,6 +86,7 @@ uv venv .venv
 uv pip install --python .venv/bin/python --exclude-newer '3 days' -r requirements-dev.txt
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 .venv/bin/python -m pytest -q
 node --check desktop/plugin.js
+node --import ./tests/js/register.mjs --test tests/js/plugin.test.mjs
 hermes plugins doctor . --ci
 hermes plugins validate . --json
 ```

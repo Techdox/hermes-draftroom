@@ -43,5 +43,7 @@ jobs:
         run: .venv/bin/python -m pytest -q
       - name: Plain ESM syntax
         run: node --check desktop/plugin.js
+      - name: Desktop controller tests (SDK test double)
+        run: node --import ./tests/js/register.mjs --test tests/js/plugin.test.mjs
       - name: Build and verify runtime package
         run: .venv/bin/python scripts/build_release.py

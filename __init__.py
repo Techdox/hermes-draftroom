@@ -70,7 +70,7 @@ def blog_draft(args, **kwargs):
         store = get_store()
         action = args.get('action')
         if action == 'list':
-            result = {'drafts': store.list(args.get('session_id')), 'scope': store.scope}
+            result = {**store.catalog(args.get('session_id')), 'scope': store.scope}
         elif action == 'read':
             result = store.read(args.get('draft_id'))
         elif action == 'create':
@@ -96,7 +96,9 @@ def handle_blog(raw_args, *, session_id='', **kwargs):
             raise Invalid('Use /blog followed by an optional title.')
         store = get_store()
         title = raw_args.strip()
-        existing = store.list(session_id) if not title else []
+        # Reopen this conversation's draft (by title when one is given) rather than
+        # creating duplicates on a repeated command; the Desktop path does the same.
+        existing = [row for row in store.list(session_id) if not title or row['title'] == title]
         result = store.read(existing[0]['id']) if existing else store.create(title or 'Untitled draft', session_id)
         emit_event('draft.opened', result)
         return ('Draftroom opened **' + result['title'] + '**.\n\n'
